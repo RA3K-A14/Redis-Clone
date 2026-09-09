@@ -1,4 +1,7 @@
 #include <iostream>
+#include "../header/client.h"
+#include <string>
+
 
 int main(int argc, char *argv[]){
     std :: string host = "127.0.0.1"; //127.0.0.1 points to current device host address 
@@ -19,5 +22,8 @@ int main(int argc, char *argv[]){
             break;
         }
     }
+
+    RedisClient cli(host, port);
+    cli.connect();
     return 0;
 }
