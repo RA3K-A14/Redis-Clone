@@ -38,6 +38,6 @@ void RedisServer::shutdown(){
     running = false;
     if (server_socket != -1){
         close(server_socket);
-    }  
+    }
     std::cout << "Server Shutting Down...!\n";
 }
