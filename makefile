@@ -1,23 +1,39 @@
+CXX = g++
 CXXFLAGS = -std=c++17 -Wall -pthread -MMD -MP -O2
 
-SRCS := $(wildcard source/*.cpp)
-OBJS := $(patsubst source/%.cpp, build/%.o, $(SRCS))
+SERVER_SRC = $(wildcard server/*.cpp)
+CLIENT_SRC = $(wildcard client/*.cpp)
 
-all: final_server
+SERVER_OBJ = $(patsubst server/%.cpp, build/server/%.o, $(SERVER_SRC))
+CLIENT_OBJ = $(patsubst client/%.cpp, build/client/%.o, $(CLIENT_SRC))
 
-build:
-	mkdir -p build
+SERVER = redis-server
+CLIENT = redis-client
 
-build/%.o: source/%.cpp | build
-	g++ $(CXXFLAGS) -c $< -o $@
+all: $(SERVER) $(CLIENT)
 
-final_server: $(OBJS)
-	g++ $(CXXFLAGS) $(OBJS) -o final_server
+$(SERVER): $(SERVER_OBJ)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+build/server/%.o: server/%.cpp
+	mkdir -p build/server
+	$(CXX) $(CXXFLAGS) -Iserver -c $< -o $@
+
+$(CLIENT): $(CLIENT_OBJ)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+build/client/%.o: client/%.cpp
+	mkdir -p build/client
+	$(CXX) $(CXXFLAGS) -Iclient -c $< -o $@
+
+-include $(SERVER_OBJ:.o=.d)
+-include $(CLIENT_OBJ:.o=.d)
 
 clean:
-	rm -rf build final_server
+	rm -rf build $(SERVER) $(CLIENT)
 
-rebuild: clean all
+run-server: $(SERVER)
+	./$(SERVER)
 
-run: all
-	./final_server
+run-client: $(CLIENT)
+	./$(CLIENT)
