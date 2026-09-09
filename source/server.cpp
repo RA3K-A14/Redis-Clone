@@ -29,14 +29,14 @@ void RedisServer::run(){
     sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);  //Port (default : 6379)
-    serverAddr.sin_addr.s_addr = INADDR_ANY;    //INADDR_ANY - represent wildcard address 0.0.0.0
-    
+    serverAddr.sin_addr.s_addr = ntohl(INADDR_ANY);    //INADDR_ANY - represent wildcard address 0.0.0.0
+
     if (bind(server_socket,(struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0){
         std::cout << "Error binding server sockets!!!\n";
         close(server_socket);
         return;
     }
-    //
+    //listen - this is the step that actually creates the socket
     if (listen(server_socket,10) < 0){
         std::cout << "Error listening server socket!!!\n";
         close(server_socket);
@@ -44,9 +44,17 @@ void RedisServer::run(){
     }
     running = true;
     std::cout << "Redis Server listening on port: " << port << "\n";
+    //Server should not enter a loop to accept and process each client.
     while(running){
         sockaddr_in clientAddr{};
-
+        socklen_t clientSize = sizeof(clientAddr);
+        int client_socket = accept(server_socket,(struct sockaddr*)&clientAddr, &clientSize);
+        if(client_socket < 0){
+            std :: cerr << "Error Accepting client\n";
+            continue;
+        }
+        std::cout << "Client connected successfully\n";
+        //...
     }
 }
 void RedisServer::shutdown(){

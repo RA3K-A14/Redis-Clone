@@ -11,7 +11,7 @@ private:
 
 public:
     RedisClient(const std :: string &host, int port);
-    void connect();
+    void connect_to_server();
 };
 
 #endif

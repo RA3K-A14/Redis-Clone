@@ -7,6 +7,6 @@ int main(int argc, char *argv[]){
     // Sets port to a specific port if argument count is greater than 2 else default port is 6379.
     
     RedisServer server(port);
-    
+    server.run();
     return 0;
 }

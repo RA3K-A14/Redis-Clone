@@ -24,6 +24,6 @@ int main(int argc, char *argv[]){
     }
 
     RedisClient cli(host, port);
-    cli.connect();
+    cli.connect_to_server();
     return 0;
 }
