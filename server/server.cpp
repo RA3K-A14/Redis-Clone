@@ -57,7 +57,20 @@ void RedisServer::run(){
             continue;
         }
         std::cout << "Client connected successfully\n";
-        //...
+        while (true){
+            char buffer[1024] = {0};
+            int bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+            if (bytes <= 0){
+                std :: cout << "Client Disconnected\n";
+                break;
+            }
+            buffer[bytes] = '\0';
+            std :: cout << "Request : " << buffer << std :: endl;
+            
+            std :: string response = "ok";
+            send(client_socket, response.c_str(), response.length(), 0);
+        }
+        close(client_socket);
     }
 }
 void RedisServer::shutdown(){

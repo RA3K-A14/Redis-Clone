@@ -1,5 +1,6 @@
 #include "client.h"
 #include <iostream>
+#include <algorithm>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h>
@@ -26,4 +27,25 @@ void RedisClient :: connect_to_server(){
         return;
     }
     std :: cout << "Connect Successful!\n"; 
+    while (true){
+        std :: string request;
+        std :: cout << "redis> ";
+        std :: getline(std :: cin, request);
+        std :: transform(request.begin(),request.end(),request.begin(), ::tolower);
+        if (request == "quit"){
+            std :: cout << "Quitting client ...\n";
+            break;
+        }
+        send(client_socket, request.c_str(), request.size(), 0);
+
+        char buffer[1024] = {0};
+        int bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+        if (bytes <= 0){
+            std :: cout << "Client Disconnected\n";
+            break;
+        }
+        buffer[bytes] = '\0';
+        std :: cout << buffer << std :: endl;
+    }
+    close(client_socket);
 }
