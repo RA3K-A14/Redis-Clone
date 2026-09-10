@@ -44,7 +44,7 @@ void RedisServer::run(){
     }
     running = true;
     std::cout << "Redis Server listening on port: " << port << "\n";
-    //Server should not enter a loop to accept and process each client.
+    //Server now enters a loop to accept and process each client.
     while(running){
         sockaddr_in clientAddr{};
         socklen_t clientSize = sizeof(clientAddr);
