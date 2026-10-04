@@ -1,4 +1,6 @@
 #include "cmd_handler.h"
+#include "redis_database.h"
+
 #include <algorithm>
 #include <sstream>
 
@@ -78,8 +80,21 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     std::ostringstream response;
 
     // Connect to Database
+    RedisDatabase& db = RedisDatabase :: getInstance();
 
     // Check Commands
-
+    if (cmd == "PING") {
+        response << "+PONG\r\n";
+    }
+    else if (cmd == "ECHO") {
+        //...
+    }
+    //Key-Value operations
+    //List operations
+    //Hash operations
+    //Default response
+    else {
+        response << "~ERROR: Unknown command\r\n";
+    }
     return response.str();
 }
