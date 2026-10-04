@@ -72,29 +72,142 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     std::vector<std::string> commands = parsed_response_command(commmand_line);
     if (commands.empty())
         return "~ERROR: Empty commands\r\n";
-    
+
     // Handle commands based on commands[0]- Actual Commands
     // And commmands[1..] - Arguments
     std::string cmd = commands[0];
     std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
-    std::ostringstream response;
 
     // Connect to Database
-    RedisDatabase& db = RedisDatabase :: getInstance();
+    RedisDatabase &db = RedisDatabase::getInstance();
 
     // Check Commands
-    if (cmd == "PING") {
-        response << "+PONG\r\n";
+    if (cmd == "PING")
+    {
+        return "+PONG\r\n";
     }
-    else if (cmd == "ECHO") {
-        //...
+    else if (cmd == "ECHO")
+    {
+        if (commands.size() < 2)
+        {
+            return "~Error: Echo requires a message\r\n";
+        }
+        return "+" + commands[1] + "\r\n";
     }
-    //Key-Value operations
-    //List operations
-    //Hash operations
-    //Default response
-    else {
-        response << "~ERROR: Unknown command\r\n";
+    else if (cmd == "FLUSHALL")
+    {
+        db.flushALL();
+        return "+OK\r\n";
     }
-    return response.str();
+    // Key-Value operations
+    else if (cmd == "SET")
+    {
+        if (commands.size() < 3)
+            return "-Error: SET requires key and value\r\n";
+        db.set(commands[1], commands[2]);
+        return "+OK\r\n";
+    }
+    else if (cmd == "GET")
+    {
+        if (commands.size() < 2)
+            return "-Error: GET requires key\r\n";
+        return db.get(commands[1]);
+    }
+    else if (cmd == "KEYS")
+    {
+        std::vector<std::string> allKeys = db.keys();
+        std::ostringstream oss;
+        oss << "*" << allKeys.size() << "\r\n";
+        for (const auto &key : allKeys)
+            oss << "$" << key.size() << "\r\n"
+                << key << "\r\n";
+        return oss.str();
+    }
+    else if (cmd == "TYPE")
+    {
+        if (commands.size() < 2)
+            return "-Error: TYPE requires key\r\n";
+        std::string type = db.type(commands[1]);
+        return "+" + type + "\r\n";
+    }
+    else if (cmd == "DEL")
+    {
+        if (commands.size() < 2)
+            return "-Error: DEL requires key\r\n";
+        if (db.del(commands[1]))
+            return ":1\r\n";
+        return ":0\r\n";
+    }
+    else if (cmd == "EXPIRE")
+    {
+    }
+    else if (cmd == "RENAME")
+    {
+        if (commands.size() < 3)
+            return "-Error: RENAME requires old key and new key\r\n";
+        if (db.)
+            return "+OK\r\n";
+        return "-Error: Key not found or rename failed\r\n";
+    }
+    // List operations
+    else if (cmd == "LGET")
+    {
+    }
+    else if (cmd == "LLEN")
+    {
+    }
+    else if (cmd == "LPUSH")
+    {
+    }
+    else if (cmd == "RPUSH")
+    {
+    }
+    else if (cmd == "LPOP")
+    {
+    }
+    else if (cmd == "RPOP")
+    {
+    }
+    else if (cmd == "LREM")
+    {
+    }
+    else if (cmd == "LINDEX")
+    {
+    }
+    else if (cmd == "LSET")
+    {
+    }
+    // Hash operations
+    else if (cmd == "HSET")
+    {
+    }
+    else if (cmd == "HGET")
+    {
+    }
+    else if (cmd == "HEXISTS")
+    {
+    }
+    else if (cmd == "HDEL")
+    {
+    }
+    else if (cmd == "HGETALL")
+    {
+    }
+    else if (cmd == "HKEYS")
+    {
+    }
+    else if (cmd == "HVALS")
+    {
+    }
+    else if (cmd == "HLEN")
+    {
+    }
+    else if (cmd == "HMSET")
+    {
+    }
+    // Default response
+    else
+    {
+        return "~Error: Unknown command\r\n";
+    }
 }
