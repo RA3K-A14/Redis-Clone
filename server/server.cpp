@@ -1,13 +1,33 @@
 #include "server.h"
+#include "cmd_handler.h"
+#include "redis_database.h"
+
 #include <iostream>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <vector>
+#include <thread>
+#include <cstring>
+#include <signal.h>
 
 static RedisServer* globalServer = nullptr;
 
+void signalHandler(int signum) {
+    if (globalServer) {
+        std :: cout << "Caught signal " << signum << ", shutting down ...\n";
+        globalServer -> shutdown();
+    }
+    exit(signum);
+}
+
+void RedisServer :: setupSignalHandler() {
+    signal(SIGINT, signalHandler);
+}
+
 RedisServer::RedisServer(int port): port(port), server_socket(-1), running(false){
     globalServer = this;
+    setupSignalHandler();
 }
 
 void RedisServer::run(){
@@ -44,6 +64,10 @@ void RedisServer::run(){
     }
     running = true;
     std::cout << "Redis Server listening on port: " << port << "\n";
+
+    std::vector<std::thread> threads;
+    RedisCommandHandler cmd_Handler;
+
     //Server now enters a loop to accept and process each client.
     while(running){
         sockaddr_in clientAddr{};
@@ -57,25 +81,45 @@ void RedisServer::run(){
             continue;
         }
         std::cout << "Client connected successfully\n";
-        while (true){
-            char buffer[1024] = {0};
-            int bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-            if (bytes <= 0){
-                std :: cout << "Client Disconnected\n";
-                break;
+
+        threads.emplace_back([client_socket, &cmd_Handler](){
+            char buffer[1024];
+            while (true){
+                memset(buffer, 0, sizeof(buffer));
+                int bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+                if (bytes <= 0){
+                    // std :: cout << "Client Disconnected\n";
+                    break;
+                }
+                std :: string request(buffer, bytes);
+                std :: string response = cmd_Handler.processCommand(request);
+                send(client_socket, response.c_str(), response.size(), 0);
             }
-            buffer[bytes] = '\0';
-            std :: cout << "Request : " << buffer << std :: endl;
-            
-            std :: string response = "ok";
-            send(client_socket, response.c_str(), response.length(), 0);
-        }
-        close(client_socket);
+            close(client_socket);
+        });
+        
     }
+
+    for(auto& t : threads){
+        if(t.joinable())
+            t.join();
+    }
+
+    //Persistance before Shutdown
+    if(!RedisDatabase::getInstance().dump("redisDB.rdb"))
+        std :: cerr << "Error Dumping Database\n";
+    else
+        std :: cout << "Database Dumped to redisDB.rdb\n";
+
 }
 void RedisServer::shutdown(){
     running = false;
     if (server_socket != -1){
+        //Dump database
+        if(!RedisDatabase::getInstance().dump("redisDB.rdb"))
+            std :: cerr << "Error Dumping Database\n";
+        else
+            std :: cout << "Database Dumped to redisDB.rdb\n";
         close(server_socket);
     }
     std::cout << "Server Shutting Down...!\n";

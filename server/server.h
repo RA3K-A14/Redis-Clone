@@ -10,6 +10,10 @@ private:
     int server_socket;
     //atomic prevents multiple thread to read or write the same flag simultaneously.
     std::atomic<bool> running;
+
+    //Signal Handling for graceful shutdown (ctrl + c)
+    void setupSignalHandler();
+
 public:
     RedisServer(int port);
     void run();
