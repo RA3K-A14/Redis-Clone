@@ -140,12 +140,16 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     }
     else if (cmd == "EXPIRE")
     {
+        if (commands.size() < 3)
+            return "-Error: EXPIRE requires key and time in seconds\r\n";
+        else
+            return "+OK\r\n";
     }
     else if (cmd == "RENAME")
     {
         if (commands.size() < 3)
-            return "-Error: RENAME requires old key and new key\r\n";
-        if (db.)
+            return "-Error: RENAME requires old key name and new key name\r\n";
+        if (db.rename(commands[1], commands[2]))
             return "+OK\r\n";
         return "-Error: Key not found or rename failed\r\n";
     }

@@ -5,6 +5,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include <chrono>
 
 class RedisDatabase
 {
@@ -18,6 +19,8 @@ private:
     std::unordered_map<std::string, std::vector<std::string>> List_store;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> Hash_store;
 
+    std::unordered_map<std::string, std::chrono::steady_clock::time_point> expiration_map;
+
 public:
     static RedisDatabase &getInstance();
 
@@ -29,7 +32,7 @@ public:
     std::string type(const std::string &key);
     bool del(const std::string &key);
     bool rename(const std::string &oldKey, const std::string &newKey);
-    // bool expire(const std :: string& key);
+    bool expire(const std::string &key, const int sec);
 
     // Persistance: Dump/Load the database to/from a file
     bool dump(const std::string &filename);

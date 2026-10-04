@@ -75,6 +75,8 @@ bool RedisDatabase::del(const std::string &key)
     return erased;
 }
 
+bool RedisDatabase::expire(const std::string &key, const int sec) {}
+
 bool RedisDatabase::rename(const std::string &oldKey, const std::string &newKey)
 {
     std::lock_guard<std::mutex> lock(DB_mutex);
