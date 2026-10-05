@@ -71,7 +71,7 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     // using RESP parser
     std::vector<std::string> commands = parsed_response_command(commmand_line);
     if (commands.empty())
-        return "~ERROR: Empty commands\r\n";
+        return "~ERR Empty commands\r\n";
 
     // Handle commands based on commands[0]- Actual Commands
     // And commmands[1..] - Arguments
@@ -82,7 +82,11 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     RedisDatabase &db = RedisDatabase::getInstance();
 
     // Check Commands
-    if (cmd == "PING")
+    if (cmd == "COMMAND")
+    {
+        return "+OK\r\n";
+    }
+    else if (cmd == "PING")
     {
         return "+PONG\r\n";
     }
@@ -90,7 +94,7 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     {
         if (commands.size() < 2)
         {
-            return "~Error: Echo requires a message\r\n";
+            return "~ERR Echo requires a message\r\n";
         }
         return "+" + commands[1] + "\r\n";
     }
@@ -103,14 +107,14 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     else if (cmd == "SET")
     {
         if (commands.size() < 3)
-            return "-Error: SET requires key and value\r\n";
+            return "-ERR SET requires key and value\r\n";
         db.set(commands[1], commands[2]);
         return "+OK\r\n";
     }
     else if (cmd == "GET")
     {
         if (commands.size() < 2)
-            return "-Error: GET requires key\r\n";
+            return "-ERR GET requires key\r\n";
         return db.get(commands[1]);
     }
     else if (cmd == "KEYS")
@@ -126,14 +130,14 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     else if (cmd == "TYPE")
     {
         if (commands.size() < 2)
-            return "-Error: TYPE requires key\r\n";
+            return "-ERR TYPE requires key\r\n";
         std::string type = db.type(commands[1]);
         return "+" + type + "\r\n";
     }
     else if (cmd == "DEL")
     {
         if (commands.size() < 2)
-            return "-Error: DEL requires key\r\n";
+            return "-ERR DEL requires key\r\n";
         if (db.del(commands[1]))
             return ":1\r\n";
         return ":0\r\n";
@@ -141,17 +145,17 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     else if (cmd == "EXPIRE")
     {
         if (commands.size() < 3)
-            return "-Error: EXPIRE requires key and time in seconds\r\n";
+            return "-ERR EXPIRE requires key and time in seconds\r\n";
         else
             return "+OK\r\n";
     }
     else if (cmd == "RENAME")
     {
         if (commands.size() < 3)
-            return "-Error: RENAME requires old key name and new key name\r\n";
+            return "-ERR RENAME requires old key name and new key name\r\n";
         if (db.rename(commands[1], commands[2]))
             return "+OK\r\n";
-        return "-Error: Key not found or rename failed\r\n";
+        return "-ERR Key not found or rename failed\r\n";
     }
     // List operations
     else if (cmd == "LGET")
@@ -209,9 +213,11 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     else if (cmd == "HMSET")
     {
     }
+    //Set operations
+    //Sorted Set operations
     // Default response
     else
     {
-        return "~Error: Unknown command\r\n";
+        return "~ERR Unknown command\r\n";
     }
 }
