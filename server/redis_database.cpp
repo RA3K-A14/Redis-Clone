@@ -2,7 +2,8 @@
 
 #include <fstream>
 #include <sstream>
-#include <string>
+#include <algorithm>
+#include <iterator>
 
 RedisDatabase &RedisDatabase::getInstance()
 {
@@ -30,8 +31,8 @@ std::string RedisDatabase::get(const std::string &key)
     std::lock_guard<std::mutex> lock(DB_mutex);
     auto it = KV_store.find(key);
     if (it != KV_store.end())
-        return "$" + std::to_string((it->second).size()) + "\r\n" + (it->second) + "\r\n";
-    return "$-1\r\n";
+        return it -> second;
+    return std :: string();
 }
 
 std::vector<std::string> RedisDatabase::keys()
@@ -105,6 +106,145 @@ bool RedisDatabase::rename(const std::string &oldKey, const std::string &newKey)
     return false;
 }
 // List operations
+std :: vector <std::string> RedisDatabase::lget(const std::string &key)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    auto it = List_store.find(key);
+    if (it != List_store.end())
+    {
+        return it -> second;
+    }
+    return {};
+}
+
+std :: string RedisDatabase :: llen(const std :: string &key)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    auto it = List_store.find(key);
+    if (it != List_store.end())
+    {
+        std :: ostringstream oss; 
+        oss << (it -> second).size();
+        return oss.str();
+    }
+    return std::string("0");
+}
+
+void RedisDatabase :: lpush(const std::string &key, const std::string &value)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    List_store[key].insert(List_store[key].begin(), value);
+}
+
+void RedisDatabase :: rpush(const std::string &key, const std::string &value)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    List_store[key].push_back(value);
+}
+
+std :: string RedisDatabase :: lpop(const std::string &key)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    auto it = List_store.find(key);
+    if (it == List_store.end() && it -> second.empty())
+        return std :: string();
+    std :: string val = it -> second.front();
+    it -> second.erase(it -> second.begin());
+    return val;
+}
+
+std :: string RedisDatabase :: rpop(const std::string &key)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    auto it = List_store.find(key);
+    if (it == List_store.end() && it -> second.empty())
+        return std :: string();
+    std :: string val = it -> second.back();
+    it -> second.pop_back();
+    return val;
+}
+
+int RedisDatabase :: lrem(const std::string &key, int count, const std::string &value)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    auto it = List_store.find(key);
+    if (it == List_store.end() && it -> second.empty())
+        return 0;
+    int removed = 0;
+    auto& list = it -> second;
+    if (count == 0)
+    {
+        auto newEnd = std :: remove(list.begin(),list.end(), value);
+        removed = std :: distance(newEnd, list.end());
+        list.erase(newEnd, list.end());
+    }
+    else if (count > 0)
+    {
+        auto itr = list.begin();
+        while(itr != list.end() && removed < count)
+        {
+            if (*itr == value) 
+            {
+                itr = list.erase(itr);
+                removed++;
+            }
+            else 
+            {
+                itr++;
+            }
+        }
+    }
+    else
+    {
+        auto itr = list.end();
+        while(itr != list.begin() && removed < (-count))
+        {
+            --itr;
+            if (*itr == value) 
+            {
+                itr = list.erase(itr);
+                removed++;
+            }
+            else 
+            {
+                itr--;
+            }
+        }
+    }
+    return removed;
+}
+
+std :: string RedisDatabase :: lindex(const std::string &key, int index)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    auto it = List_store.find(key);
+    if (it == List_store.end())
+        return std::string();
+    int size = (it->second).size();
+    if (index < 0)
+    {
+        index = size + index;
+    }
+    if (index >= size || index <= (-size))
+        return std::string();
+    return (it->second)[index];
+}
+
+void RedisDatabase :: lset(const std::string &key, int index, const std::string &value)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    auto it = List_store.find(key);
+    if(it == List_store.end())
+        return;
+    auto& list = it->second;
+    int size = list.size();
+    if (index < 0)
+        index = size + index;
+    if (index <= (-size) || index >= (size))
+        return;
+    list[index] = value;
+}
+
 // Hash operations
 
 // Memory -> File -dump()

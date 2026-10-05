@@ -71,7 +71,7 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     // using RESP parser
     std::vector<std::string> commands = parsed_response_command(commmand_line);
     if (commands.empty())
-        return "~ERR Empty commands\r\n";
+        return "-ERR Empty commands\r\n";
 
     // Handle commands based on commands[0]- Actual Commands
     // And commmands[1..] - Arguments
@@ -94,7 +94,7 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     {
         if (commands.size() < 2)
         {
-            return "~ERR Echo requires a message\r\n";
+            return "-ERR Echo requires a message\r\n";
         }
         return "+" + commands[1] + "\r\n";
     }
@@ -115,7 +115,10 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     {
         if (commands.size() < 2)
             return "-ERR GET requires key\r\n";
-        return db.get(commands[1]);
+        std :: string val = db.get(commands[1]);
+        if (val.empty())
+            return "-1\r\n";
+        return "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
     }
     else if (cmd == "KEYS")
     {
@@ -160,30 +163,110 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     // List operations
     else if (cmd == "LGET")
     {
+        if (commands.size() < 2)
+            return "-ERR LGET requires a key.\r\n";
+        auto allElem = db.lget(commands[1]);
+        std :: ostringstream oss;
+        oss << "*" << allElem.size() << "\r\n";
+        for (const auto& elem : allElem)
+        {
+            oss << "$" << elem.length() << "\r\n" << elem << "\r\n";
+        }
+        return oss.str();
     }
     else if (cmd == "LLEN")
     {
+        if (commands.size() < 2)
+            return "-ERR LLEN requires a key.\r\n";
+        std :: string len = db.llen(commands[1]);
+        return ":" + len + "\r\n";
     }
     else if (cmd == "LPUSH")
     {
+        if (commands.size() < 3)
+            return "-ERR LPUSH requires a key and atleast one element.\r\n";
+        for (size_t i = 2; i < commands.size(); ++i)
+        {
+            db.lpush(commands[1],commands[i]);
+        }
+        auto len = db.llen(commands[1]);
+        return ":" + len + "\r\n";
     }
     else if (cmd == "RPUSH")
     {
+        if (commands.size() < 3)
+            return "-ERR RPUSH requires a key and atleast one element.\r\n";
+        for (size_t i = 2; i < commands.size(); ++i)
+        {
+            db.rpush(commands[1],commands[i]);
+        }
+        auto len = db.llen(commands[1]);
+        return ":" + len + "\r\n";
     }
     else if (cmd == "LPOP")
     {
+        if (commands.size() < 2)
+            return "-ERR LPOP requires a key.\r\n";
+        std :: string val = db.lpop(commands[1]);
+        if (val.empty())
+            return "-1\r\n";
+        return "$" + std :: to_string(val.size()) + "\r\n" + val + "\r\n";
     }
     else if (cmd == "RPOP")
     {
+        if (commands.size() < 2)
+            return "-ERR RPOP requires a key.\r\n";
+        std :: string val = db.rpop(commands[1]);
+        if (val.empty())
+            return "-1\r\n";
+        return "$" + std :: to_string(val.size()) + "\r\n" + val + "\r\n";
     }
     else if (cmd == "LREM")
     {
+        if (commands.size() < 4)
+            return "-ERR RPOP requires a key, count and element.\r\n";
+        try
+        {
+            int count = std :: stoi (commands[2]);
+            int removed = db.lrem(commands[1],count,commands[3]);
+            return ":" + std::to_string(removed) + "\r\n";
+        }
+        catch (const std :: exception&)
+        {
+            return "-ERR Invalid count";
+        }
     }
     else if (cmd == "LINDEX")
     {
+        if (commands.size() < 3)
+            return "-ERR RPOP requires a key and index.\r\n";
+        try
+        {
+            int index = std :: stoi (commands[2]);
+            std :: string val = db.lindex(commands[1], index);
+            if (val.empty())
+                return "-1\r\n";
+            return "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
+        }
+        catch(const std :: exception&)
+        {
+            return "-ERR Invalid index";
+        }
     }
     else if (cmd == "LSET")
     {
+        if (commands.size() < 4)
+            return "-ERR RPOP requires a key, index and value.\r\n";
+        try
+        {
+            int index = std::stoi(commands[2]);
+            db.lset(commands[1],index,commands[3]);
+            return "+OK\r\n";
+        }
+        catch(std::exception&)
+        {
+            return "-ERR Invalid index";
+        }
     }
     // Hash operations
     else if (cmd == "HSET")
@@ -218,6 +301,6 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     // Default response
     else
     {
-        return "~ERR Unknown command\r\n";
+        return "-ERR Unknown command\r\n";
     }
 }

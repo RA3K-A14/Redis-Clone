@@ -92,9 +92,7 @@ void RedisServer::run(){
                     break;
                 }
                 std :: string request(buffer, bytes);
-                std :: cout << request;
                 std :: string response = cmd_Handler.processCommand(request);
-                std :: cout << response;
                 send(client_socket, response.c_str(), response.size(), 0);
             }
             close(client_socket);
