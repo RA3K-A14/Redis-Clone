@@ -25,6 +25,7 @@ public:
     static RedisDatabase &getInstance();
 
     void flushALL();
+    
     // Key-Value Operations
     void set(const std::string &key, const std::string &value);
     std::string get(const std::string &key);
@@ -33,6 +34,7 @@ public:
     bool del(const std::string &key);
     bool rename(const std::string &oldKey, const std::string &newKey);
     bool expire(const std::string &key, const int sec);
+    
     //List Operations
     std :: vector <std::string> lget(const std::string &key);
     std :: string llen(const std :: string &key);
@@ -43,6 +45,16 @@ public:
     int lrem(const std::string &key, int count, const std::string &value);
     std :: string lindex(const std::string &key, int index);
     void lset(const std::string &key, int index, const std::string &value);
+    
+    //Hash operations
+    void hset(const std::string &key, const std :: vector<std :: pair <std :: string , std :: string>> &fields);
+    std :: string hget (const std::string &key, const std::string &field);
+    bool hexists (const std::string &key, const std::string &field);
+    int hdel (const std::string &key,const std :: vector <std :: string>& fields);
+    std :: vector <std :: string> hgetall (const std::string &key);
+    std :: vector <std :: string> hkeys (const std::string &key);
+    std :: vector <std :: string> hvals (const std::string &key);
+    int hlen (const std::string &key);
 
     // Persistance: Dump/Load the database to/from a file
     bool dump(const std::string &filename);

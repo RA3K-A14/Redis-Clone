@@ -126,8 +126,7 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         std::ostringstream oss;
         oss << "*" << allKeys.size() << "\r\n";
         for (const auto &key : allKeys)
-            oss << "$" << key.size() << "\r\n"
-                << key << "\r\n";
+            oss << "$" << key.size() << "\r\n" << key << "\r\n";
         return oss.str();
     }
     else if (cmd == "TYPE")
@@ -271,30 +270,86 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     // Hash operations
     else if (cmd == "HSET")
     {
+        if (commands.size() < 4)
+            return "-ERR HSET requires a key, field and value.\r\n";
+        if ((commands.size() - 2) % 2 != 0)
+            return "-ERR Wrong number of arguements.\r\n";
+        std :: vector<std :: pair <std :: string , std :: string>> fields;
+        for (size_t i = 2; i < commands.size(); i += 2){
+            fields.push_back({commands[i], commands[i + 1]});
+        }
+        db.hset(commands[1],fields);
+        return "+OK\r\n";
     }
     else if (cmd == "HGET")
     {
+        if (commands.size() < 3)
+            return "-ERR HGET requires a key and field.\r\n";
+        std :: string response = db.hget(commands[1],commands[2]);
+        if (response.empty())
+            return "-1\r\n";
+        return "$" + std::to_string(response.length()) + "\r\n" + response + "\r\n";
     }
     else if (cmd == "HEXISTS")
     {
+        if (commands.size() < 3)
+            return "-ERR HEXISTS requires a key and field.\r\n";
+        if (db.hexists(commands[1],commands[2]))
+            return ":1\r\n";
+        else
+            return ":0\r\n";
     }
     else if (cmd == "HDEL")
     {
+        if (commands.size() < 3)
+            return "-ERR HDEL requires a key and field.\r\n";
+        std :: vector <std :: string> fields;
+        for (size_t i = 2; i < commands.size(); ++i)
+        {
+            fields.push_back(commands[i]);
+        }
+        int removed = db.hdel(commands[1], fields);
+        return ":" + std::to_string(removed) + "\r\n";
     }
     else if (cmd == "HGETALL")
     {
+        if (commands.size() < 2)
+            return "-ERR HGETALL requires a key.\r\n";
+        std :: vector <std :: string> allpairs = db.hgetall(commands[1]);
+        std :: ostringstream oss;
+        oss << "*" << allpairs.size() << "\r\n";
+        for (const auto& pair : allpairs)
+            oss << "$" << pair.size() << "\r\n" << pair << "\r\n";
+        return oss.str();
     }
     else if (cmd == "HKEYS")
     {
+        if (commands.size() < 2)
+            return "-ERR HKEYS requires a key.\r\n";
+        std :: vector <std :: string> allFields = db.hkeys(commands[1]);
+        std :: ostringstream oss;
+        oss << "*" << allFields.size() << "\r\n";
+        for (const auto& field : allFields)
+            oss << "$" << field.size() << "\r\n" << field << "\r\n";
+        return oss.str();
     }
     else if (cmd == "HVALS")
     {
+        if (commands.size() < 2)
+            return "-ERR HVALS requires a key.\r\n";
+        std :: vector <std :: string> allVals = db.hvals(commands[1]);
+        std :: ostringstream oss;
+        oss << "*" << allVals.size() << "\r\n";
+        for (const auto& val : allVals)
+            oss << "$" << val.size() << "\r\n" << val << "\r\n";
+        return oss.str();
     }
     else if (cmd == "HLEN")
     {
-    }
-    else if (cmd == "HMSET")
-    {
+        if (commands.size() < 2)
+            return "-ERR HLEN requires a key.\r\n";
+        int len = db.hlen(commands[1]);
+        return ":" + std::to_string(len) + "\r\n";
     }
     //Set operations
     //Sorted Set operations
