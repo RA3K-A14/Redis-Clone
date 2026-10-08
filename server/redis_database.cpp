@@ -443,6 +443,28 @@ int RedisDatabase :: zadd(const std::string &key, const std :: vector<std :: pai
     return added;
 }
 
+int RedisDatabase :: zrem(const std::string &key, const std :: vector <std :: string> &members)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    purgeExpiredKeys();
+    if (SSet_store.find(key) == SSet_store.end())
+        return 0;
+    int removed = 0;
+    for (const auto& member : members)
+    {
+        for(auto it = SSet_store[key].begin(); it != SSet_store[key].end(); ++it)
+        {
+            if (member == it->second)
+            {
+                SSet_store[key].erase(it);
+                removed++;
+                break;
+            }
+        }
+    }
+    return removed;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
