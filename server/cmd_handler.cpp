@@ -395,6 +395,12 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         }
         return oss.str();
     }
+    else if (cmd == "SCARD")
+    {
+        if (commands.size() < 2)
+            return "-ERR SCARD requires a key.";
+        return ":" + std::to_string(db.scard(commands[1])) + "\r\n";
+    }
     //Sorted Set operations
     // Default response
     else
