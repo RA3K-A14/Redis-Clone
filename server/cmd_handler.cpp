@@ -364,6 +364,18 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         int num_of_elements_added = db.sadd(commands[1], members);
         return ":" + std::to_string(num_of_elements_added) + "\r\n";
     }
+    else if (cmd == "SREM")
+    {
+        if (commands.size() < 3)
+            return "-ERR SREM requires a key and members.";
+        std :: vector <std :: string> members;
+        for(size_t i = 2; i < commands.size(); ++i)
+        {
+            members.push_back(commands[i]);
+        }
+        int removed = db.srem(commands[1], members);
+        return ":" + std::to_string(removed) + "\r\n";
+    }
     //Sorted Set operations
     // Default response
     else
