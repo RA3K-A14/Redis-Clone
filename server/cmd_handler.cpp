@@ -1,6 +1,7 @@
 #include "cmd_handler.h"
 #include "redis_database.h"
 
+#include <iostream>
 #include <algorithm>
 #include <sstream>
 
@@ -102,6 +103,15 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     {
         db.flushALL();
         return "+OK\r\n";
+    }
+    else if (cmd == "SAVE")
+    {
+        if(db.dump("redisDB.rdb")){
+            std :: cout << "Successfully dumped database to redisDB.rdb\n";
+            return "+OK\r\n";
+        }
+        std :: cerr << "Could not dump database.\n";
+        return "-1\r\n";
     }
     // Key-Value operations
     else if (cmd == "SET")
