@@ -68,13 +68,13 @@ public:
     std :: vector <std :: string> smembers (const std::string &key);
     int scard (const std::string &key);
 
-    //Sorted Set
+    //Sorted Set Operations
     int zadd (const std::string &key, const std :: vector<std :: pair <std :: string , std :: string>> &members);
     int zrem (const std::string &key, const std :: vector <std :: string> &members);
     std :: string zscore (const std::string &key, const std::string &member);
     int zrank (const std::string &key, const std::string &member);
     std :: vector <std :: string> zall (const std::string &key);
-    
+
     // Persistance: Dump/Load the database to/from a file
     bool dump(const std::string &filename);
     bool load(const std::string &filename);
