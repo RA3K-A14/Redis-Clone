@@ -36,6 +36,7 @@ public:
     bool del(const std::string &key);
     bool rename(const std::string &oldKey, const std::string &newKey);
     bool expire(const std::string &key, const int sec);
+    void purgeExpiredKeys();
     
     //List Operations
     std :: vector <std::string> lget(const std::string &key);
