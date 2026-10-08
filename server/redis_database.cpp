@@ -498,6 +498,22 @@ int RedisDatabase :: zrank (const std::string &key, const std::string &member)
     return -1;
 }
 
+std :: vector <std :: string> RedisDatabase :: zall (const std::string &key)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    purgeExpiredKeys();
+    auto it = SSet_store.find(key);
+    if (it == SSet_store.end())
+        return {};
+    std :: vector <std :: string> members;
+    for(const auto& item : it->second)
+    {
+        members.push_back(std::to_string(item.first));
+        members.push_back(item.second);
+    }
+    return members;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
