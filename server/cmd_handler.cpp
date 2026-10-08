@@ -376,6 +376,12 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         int removed = db.srem(commands[1], members);
         return ":" + std::to_string(removed) + "\r\n";
     }
+    else if (cmd == "SISMEMBER")
+    {
+        if (commands.size() < 3)
+            return "-ERR SISMEMBER requires a key and a member.";
+        return ":" + std::to_string(db.sismember(commands[1],commands[2])) + "\r\n";
+    }
     //Sorted Set operations
     // Default response
     else
