@@ -432,7 +432,15 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         int removed = db.zrem(commands[1], members);
         return ":" + std::to_string(removed) + "\r\n";
     }
-    
+    else if (cmd == "ZSCORE")
+    {
+        if (commands.size() < 3)
+            return "-ERR ZSCORE requires a key and member.";
+        std::string score = db.zscore(commands[1],commands[2]);
+        if(score.empty())
+            return "-1\r\n";
+        return "$" + std::to_string(score.length()) + "\r\n" + score + "\r\n";
+    }
     // Default response
     else
     {
