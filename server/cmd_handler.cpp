@@ -1,6 +1,7 @@
 #include "cmd_handler.h"
 #include "redis_database.h"
 
+#include <iostream>
 #include <algorithm>
 #include <sstream>
 
@@ -103,6 +104,24 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         db.flushALL();
         return "+OK\r\n";
     }
+    else if (cmd == "SAVE")
+    {
+        if(db.dump("redisDB.rdb")){
+            std :: cout << "Successfully dumped database to redisDB.rdb\n";
+            return "+OK\r\n";
+        }
+        std :: cerr << "Could not dump database.\n";
+        return "-1\r\n";
+    }
+    else if (cmd == "LOAD")
+    {
+        if (db.load("redisDB.rdb")){
+            std::cout << "Database Loaded from redisDB.rdb\n";
+            return "+OK\r\n";
+        }
+        std::cerr << "Error Loading Database.\n";
+        return "-1\r\n";
+    }
     // Key-Value operations
     else if (cmd == "SET")
     {
@@ -148,8 +167,15 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
     {
         if (commands.size() < 3)
             return "-ERR EXPIRE requires key and time in seconds\r\n";
-        else
-            return "+OK\r\n";
+        try{
+            int sec = std::stoi(commands[2]);
+            if(db.expire(commands[1], sec))
+                return "+OK\r\n";
+            else
+                return "-ERR Key not found\r\n";
+        }catch(std::exception&){
+            return "-ERR Invalid expiration time\r\n";
+        }
     }
     else if (cmd == "RENAME")
     {
@@ -352,7 +378,118 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         return ":" + std::to_string(len) + "\r\n";
     }
     //Set operations
+    else if (cmd == "SADD")
+    {
+        if (commands.size() < 3)
+            return "-ERR SADD requires a key and a member.";
+        std :: vector <std :: string> members;
+        for(size_t i = 2; i < commands.size(); ++i)
+        {
+            members.push_back(commands[i]);
+        }
+        int num_of_elements_added = db.sadd(commands[1], members);
+        return ":" + std::to_string(num_of_elements_added) + "\r\n";
+    }
+    else if (cmd == "SREM")
+    {
+        if (commands.size() < 3)
+            return "-ERR SREM requires a key and members.";
+        std :: vector <std :: string> members;
+        for(size_t i = 2; i < commands.size(); ++i)
+        {
+            members.push_back(commands[i]);
+        }
+        int removed = db.srem(commands[1], members);
+        return ":" + std::to_string(removed) + "\r\n";
+    }
+    else if (cmd == "SISMEMBER")
+    {
+        if (commands.size() < 3)
+            return "-ERR SISMEMBER requires a key and a member.";
+        return ":" + std::to_string(db.sismember(commands[1],commands[2])) + "\r\n";
+    }
+    else if (cmd == "SMEMBERS")
+    {
+        if (commands.size() < 2)
+            return "-ERR SMEMBERS requires a key.";
+        std :: vector <std :: string> allMembers = db.smembers(commands[1]);
+        std :: ostringstream oss;
+        oss << "*" << allMembers.size() << "\r\n";
+        for (auto &member : allMembers)
+        {
+            oss << "$" << member.length() << "\r\n" << member << "\r\n";
+        }
+        return oss.str();
+    }
+    else if (cmd == "SCARD")
+    {
+        if (commands.size() < 2)
+            return "-ERR SCARD requires a key.";
+        return ":" + std::to_string(db.scard(commands[1])) + "\r\n";
+    }
     //Sorted Set operations
+    else if (cmd == "ZADD")
+    {
+        if (commands.size() < 4)
+            return "-ERR ZADD requires a key, scores and members.\r\n";
+        if ((commands.size() - 2) % 2 != 0)
+            return "-ERR Wrong number of arguements.\r\n";
+        std :: vector<std :: pair <std :: string , std :: string>> members;
+        for (size_t i = 2; i < commands.size(); i += 2)
+        {
+            members.push_back({commands[i], commands[i + 1]});
+        }
+        int len = db.zadd(commands[1], members);
+        if (len == -1)
+        {
+            return "-ERR Invalid Score\r\n";
+        }
+        return ":" + std::to_string(len) + "\r\n";
+    }
+    else if (cmd == "ZREM")
+    {
+        if (commands.size() < 3)
+            return "-ERR ZREM requires a key and members.\r\n";
+        std :: vector <std :: string> members;
+        for(size_t i = 2; i < commands.size(); ++i)
+        {
+            members.push_back(commands[i]);
+        }
+        int removed = db.zrem(commands[1], members);
+        return ":" + std::to_string(removed) + "\r\n";
+    }
+    else if (cmd == "ZSCORE")
+    {
+        if (commands.size() < 3)
+            return "-ERR ZSCORE requires a key and member.";
+        std::string score = db.zscore(commands[1],commands[2]);
+        if(score.empty())
+            return "-1\r\n";
+        return "$" + std::to_string(score.length()) + "\r\n" + score + "\r\n";
+    }
+    else if (cmd == "ZRANK")
+    {
+        if (commands.size() < 3)
+            return "-ERR ZRANK requires a key and member.";
+        int rank = db.zrank(commands[1], commands[2]);
+        if (rank == -1)
+            return "-1\r\n";
+        return ":" + std::to_string(rank) + "\r\n";
+    }
+    else if (cmd == "ZALL")
+    {
+        if (commands.size() < 2)
+            return "-ERR ZRANK requires a key.";
+        std::vector<std::string> members;
+        members = db.zall(commands[1]);
+        if(members.empty())
+            return "-1\r\n";
+        std::ostringstream oss;
+        oss << "*" << members.size() << "\r\n";
+        for(const auto& member : members)
+            oss << "$" << member.length() << "\r\n" << member << "\r\n";
+        return oss.str();
+    }
     // Default response
     else
     {

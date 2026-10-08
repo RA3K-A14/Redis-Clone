@@ -4,6 +4,8 @@
 #include <string>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
+#include <set>
 #include <vector>
 #include <chrono>
 
@@ -18,6 +20,8 @@ private:
     std::unordered_map<std::string, std::string> KV_store;
     std::unordered_map<std::string, std::vector<std::string>> List_store;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> Hash_store;
+    std::unordered_map<std::string, std::unordered_set<std::string>> Set_store;
+    std::unordered_map<std::string, std::set<std::pair<double, std::string>>> SSet_store;
 
     std::unordered_map<std::string, std::chrono::steady_clock::time_point> expiration_map;
 
@@ -34,6 +38,7 @@ public:
     bool del(const std::string &key);
     bool rename(const std::string &oldKey, const std::string &newKey);
     bool expire(const std::string &key, const int sec);
+    void purgeExpiredKeys();
     
     //List Operations
     std :: vector <std::string> lget(const std::string &key);
@@ -55,6 +60,20 @@ public:
     std :: vector <std :: string> hkeys (const std::string &key);
     std :: vector <std :: string> hvals (const std::string &key);
     int hlen (const std::string &key);
+
+    //Set Operations
+    int sadd (const std::string &key, const std :: vector <std :: string> &members);
+    int srem (const std::string &key, const std :: vector <std :: string> &members);
+    int sismember (const std::string &key, const std::string &member);
+    std :: vector <std :: string> smembers (const std::string &key);
+    int scard (const std::string &key);
+
+    //Sorted Set Operations
+    int zadd (const std::string &key, const std :: vector<std :: pair <std :: string , std :: string>> &members);
+    int zrem (const std::string &key, const std :: vector <std :: string> &members);
+    std :: string zscore (const std::string &key, const std::string &member);
+    int zrank (const std::string &key, const std::string &member);
+    std :: vector <std :: string> zall (const std::string &key);
 
     // Persistance: Dump/Load the database to/from a file
     bool dump(const std::string &filename);
