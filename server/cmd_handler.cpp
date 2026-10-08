@@ -352,6 +352,18 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         return ":" + std::to_string(len) + "\r\n";
     }
     //Set operations
+    else if (cmd == "SADD")
+    {
+        if (commands.size() < 3)
+            return "-ERR SADD requires a key and a member.";
+        std :: vector <std :: string> members;
+        for(size_t i = 2; i < commands.size(); ++i)
+        {
+            members.push_back(commands[i]);
+        }
+        int num_of_elements_added = db.sadd(commands[1], members);
+        return ":" + std::to_string(num_of_elements_added) + "\r\n";
+    }
     //Sorted Set operations
     // Default response
     else
