@@ -465,6 +465,22 @@ int RedisDatabase :: zrem(const std::string &key, const std :: vector <std :: st
     return removed;
 }
 
+std :: string RedisDatabase :: zscore (const std::string &key, const std::string &member)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    purgeExpiredKeys();
+    if (SSet_store.find(key) == SSet_store.end())
+        return std::string();
+    for(auto it = SSet_store[key].begin(); it != SSet_store[key].end(); ++it)
+    {
+        if (member == it->second)
+        {
+            return std::to_string(it->first);
+        }
+    }
+    return std::string();
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
