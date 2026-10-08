@@ -407,6 +407,42 @@ int RedisDatabase :: scard (const std::string &key)
     return len;
 }
 
+//Sorted Set Operations
+
+int RedisDatabase :: zadd(const std::string &key, const std :: vector<std :: pair <std :: string , std :: string>> &members)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    int added = 0;
+    for(const auto& item : members)
+    {
+        double score;
+        try{
+            score = std::stod(item.first);
+        }catch(std::exception&)
+        {
+            return -1;
+        }
+        std::string member = item.second;
+        bool found = false;
+        for(auto it = SSet_store[key].begin(); it != SSet_store[key].end(); ++it)
+        {
+            if (member == it->second)
+            {
+                SSet_store[key].erase(it);
+                SSet_store[key].insert({score, member});
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+        {
+            SSet_store[key].insert({score, member});
+            added++;
+        }
+    }
+    return added;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
