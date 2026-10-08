@@ -481,6 +481,23 @@ std :: string RedisDatabase :: zscore (const std::string &key, const std::string
     return std::string();
 }
 
+int RedisDatabase :: zrank (const std::string &key, const std::string &member)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    purgeExpiredKeys();
+    const auto& it = SSet_store.find(key);
+    if (it == SSet_store.end())
+        return -1;
+    int rank = 0;
+    for (const auto& item : it->second)
+    {
+        if(member == item.second)
+            return rank;
+        rank++;
+    }
+    return -1;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
