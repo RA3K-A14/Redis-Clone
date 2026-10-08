@@ -402,6 +402,24 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         return ":" + std::to_string(db.scard(commands[1])) + "\r\n";
     }
     //Sorted Set operations
+    else if (cmd == "ZADD")
+    {
+        if (commands.size() < 4)
+            return "-ERR ZADD requires a key, scores and members.\r\n";
+        if ((commands.size() - 2) % 2 != 0)
+            return "-ERR Wrong number of arguements.\r\n";
+        std :: vector<std :: pair <std :: string , std :: string>> members;
+        for (size_t i = 2; i < commands.size(); i += 2)
+        {
+            members.push_back({commands[i], commands[i + 1]});
+        }
+        int len = db.zadd(commands[1], members);
+        if (len == -1)
+        {
+            return "-ERR Invalid Score\r\n";
+        }
+        return ":" + std::to_string(len) + "\r\n";
+    }
     // Default response
     else
     {
