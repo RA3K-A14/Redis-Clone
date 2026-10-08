@@ -382,6 +382,21 @@ int RedisDatabase :: sismember(const std::string &key, const std::string &member
     return 1;
 }
 
+std :: vector <std :: string> RedisDatabase :: smembers (const std::string &key)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    purgeExpiredKeys();
+    if (Set_store.find(key) == Set_store.end())
+        return {};
+    std :: vector <std :: string> allMembers;
+    const auto &it = Set_store.at(key);
+    for (const auto &s : it)
+    {
+        allMembers.push_back(s);
+    }
+    return allMembers;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
