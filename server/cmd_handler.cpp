@@ -376,16 +376,6 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         int removed = db.srem(commands[1], members);
         return ":" + std::to_string(removed) + "\r\n";
     }
-    int RedisDatabase :: sismember(const std::string &key, const std::string &member)
-    {
-        std::lock_guard<std::mutex> lock(DB_mutex);
-        purgeExpiredKeys();
-        if(Set_store.find(key) == Set_store.end())
-            return 0;
-        if(Set_store[key].find(member) == Set_store[key].end())
-            return 0;
-        return 1;
-    }
     //Sorted Set operations
     // Default response
     else
