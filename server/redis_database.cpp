@@ -341,6 +341,22 @@ int RedisDatabase :: hlen (const std::string &key)
     return Hash_store[key].size();
 }
 
+//Set Operations
+
+int RedisDatabase :: sadd(const std::string &key, const std :: vector <std :: string> &members)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    int added = 0;
+    for(const auto& member : members)
+    {
+        if(Set_store[key].insert(member).second)
+        {
+            added++;
+        }
+    }
+    return added;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
