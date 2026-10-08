@@ -56,6 +56,15 @@ public:
     std :: vector <std :: string> hvals (const std::string &key);
     int hlen (const std::string &key);
 
+    //Set Operations
+    int sadd (const std::string &key, const std :: vector <std :: string> &members);
+    int srem (const std::string &key, const std :: vector <std :: string> &members);
+    int sismember (const std::string &key, const std::string &member);
+    std :: vector <std :: string> smembers (const std::string &key);
+    int scard (const std::string &key);
+
+    //Sorted Set
+    
     // Persistance: Dump/Load the database to/from a file
     bool dump(const std::string &filename);
     bool load(const std::string &filename);
