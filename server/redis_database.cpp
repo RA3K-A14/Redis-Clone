@@ -371,6 +371,17 @@ int RedisDatabase :: srem(const std::string &key, const std :: vector <std :: st
     return removed;
 }
 
+int RedisDatabase :: sismember(const std::string &key, const std::string &member)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    purgeExpiredKeys();
+    if(Set_store.find(key) == Set_store.end())
+        return 0;
+    if(Set_store[key].find(member) == Set_store[key].end())
+        return 0;
+    return 1;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
