@@ -441,6 +441,29 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
             return "-1\r\n";
         return "$" + std::to_string(score.length()) + "\r\n" + score + "\r\n";
     }
+    else if (cmd == "ZRANK")
+    {
+        if (commands.size() < 3)
+            return "-ERR ZRANK requires a key and member.";
+        int rank = db.zrank(commands[1], commands[2]);
+        if (rank == -1)
+            return "-1\r\n";
+        return ":" + std::to_string(rank) + "\r\n";
+    }
+    else if (cmd == "ZALL")
+    {
+        if (commands.size() < 2)
+            return "-ERR ZRANK requires a key.";
+        std::vector<std::string> members;
+        members = db.zall(commands[1]);
+        if(members.empty())
+            return "-1\r\n";
+        std::ostringstream oss;
+        oss << "*" << members.size() << "\r\n";
+        for(const auto& member : members)
+            oss << "$" << member.length() << "\r\n" << member << "\r\n";
+        return oss.str();
+    }
     // Default response
     else
     {
