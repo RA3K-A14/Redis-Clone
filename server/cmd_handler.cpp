@@ -113,6 +113,15 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         std :: cerr << "Could not dump database.\n";
         return "-1\r\n";
     }
+    else if (cmd == "LOAD")
+    {
+        if (db.load("redisDB.rdb")){
+            std::cout << "Database Loaded from redisDB.rdb\n";
+            return "+OK\r\n";
+        }
+        std::cerr << "Error Loading Database.\n";
+        return "-1\r\n";
+    }
     // Key-Value operations
     else if (cmd == "SET")
     {
