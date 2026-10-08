@@ -382,6 +382,19 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
             return "-ERR SISMEMBER requires a key and a member.";
         return ":" + std::to_string(db.sismember(commands[1],commands[2])) + "\r\n";
     }
+    else if (cmd == "SMEMBERS")
+    {
+        if (commands.size() < 2)
+            return "-ERR SMEMBERS requires a key.";
+        std :: vector <std :: string> allMembers = db.smembers(commands[1]);
+        std :: ostringstream oss;
+        oss << "*" << allMembers.size() << "\r\n";
+        for (auto &member : allMembers)
+        {
+            oss << "$" << member.length() << "\r\n" << member << "\r\n";
+        }
+        return oss.str();
+    }
     //Sorted Set operations
     // Default response
     else
