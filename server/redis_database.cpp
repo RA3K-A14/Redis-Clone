@@ -397,6 +397,16 @@ std :: vector <std :: string> RedisDatabase :: smembers (const std::string &key)
     return allMembers;
 }
 
+int RedisDatabase :: scard (const std::string &key)
+{
+    std::lock_guard<std::mutex> lock(DB_mutex);
+    purgeExpiredKeys();
+    if (Set_store.find(key) == Set_store.end())
+        return 0;
+    int len = Set_store[key].size();
+    return len;
+}
+
 // Memory -> File -dump()
 
 bool RedisDatabase::dump(const std::string &filename)
