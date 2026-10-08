@@ -20,6 +20,8 @@ private:
     std::unordered_map<std::string, std::string> KV_store;
     std::unordered_map<std::string, std::vector<std::string>> List_store;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> Hash_store;
+    std::unordered_map<std::string, std::unordered_set<std::string>> Set_store;
+    std::unordered_map<std::string, std::set<std::pair<double, std::string>>> SSet_store;
 
     std::unordered_map<std::string, std::chrono::steady_clock::time_point> expiration_map;
 
