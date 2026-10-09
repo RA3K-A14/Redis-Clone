@@ -17,13 +17,16 @@ Database commands are as follows:-
     + FLUSHALL -> This commands is used to cleanup all key data stores.
     + SAVE -> This command dumps the entire memory store to a local file.
     + LOAD -> This command loads the entire memory store from a local file.
+  - Expiration & TTL:
+    + EXPIRE key seconds -> set TTL for the given key to be erased upon expiration.
+    + TTL key -> returns the time-to-live(remainig life time) of the key.
+    + PERSIST key -> removes the expiration of the key.
   - Key/Value:
     + SET key value -> This commands stores a key value pair in string format
     + GET key -> retrieves the string or nil
     + KEYS -> List all keys
     + TYPE key -> returns the type of key stored string/list/hash/set/sorted set.
     + DEL key -> erases the key present in any/all stores.
-    + EXPIRE key seconds -> set TTL for the given key to be erased upon expiration.
     + RENAME oldKey newKey -> rename a key
   - Lists:
     + LGET key -> returns the elements stored
