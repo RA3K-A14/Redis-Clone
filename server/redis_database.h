@@ -29,6 +29,12 @@ public:
     static RedisDatabase &getInstance();
 
     void flushALL();
+
+    //Expirations & TTL
+    bool expire(const std::string &key, const int sec);
+    void purgeExpiredKeys();
+    int ttl(const std::string &key);
+    bool persist(const std::string &key);
     
     // Key-Value Operations
     void set(const std::string &key, const std::string &value);
@@ -36,9 +42,9 @@ public:
     std::vector<std::string> keys();
     std::string type(const std::string &key);
     bool del(const std::string &key);
+    bool exists(const std::string &key);
     bool rename(const std::string &oldKey, const std::string &newKey);
-    bool expire(const std::string &key, const int sec);
-    void purgeExpiredKeys();
+
     
     //List Operations
     std :: vector <std::string> lget(const std::string &key);
