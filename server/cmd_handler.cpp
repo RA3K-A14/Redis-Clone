@@ -122,6 +122,36 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
         std::cerr << "Error Loading Database.\n";
         return "-1\r\n";
     }
+    //Expire & TTL
+    else if (cmd == "EXPIRE")
+    {
+        if (commands.size() < 3)
+            return "-ERR EXPIRE requires key and time in seconds\r\n";
+        try{
+            int sec = std::stoi(commands[2]);
+            if(db.expire(commands[1], sec))
+                return "+OK\r\n";
+            else
+                return "-ERR Key not found\r\n";
+        }catch(std::exception&){
+            return "-ERR Invalid expiration time\r\n";
+        }
+    }
+    else if (cmd == "TTL")
+    {
+        if (commands.size() < 2)
+            return "-ERR TTL requires key\r\n";
+        int sec = db.ttl(commands[1]);
+        return ":" + std::to_string(sec) + "\r\n";
+    }
+    else if (cmd == "PERSIST")
+    {
+        if (commands.size() < 2)
+            return "-ERR PERSIST requires key\r\n";
+        if (db.persist(commands[1]))
+            return ":1\r\n";
+        return ":0\r\n";
+    }
     // Key-Value operations
     else if (cmd == "SET")
     {
@@ -163,19 +193,13 @@ std::string RedisCommandHandler::processCommand(const std::string &commmand_line
             return ":1\r\n";
         return ":0\r\n";
     }
-    else if (cmd == "EXPIRE")
+    else if (cmd == "EXISTS")
     {
-        if (commands.size() < 3)
-            return "-ERR EXPIRE requires key and time in seconds\r\n";
-        try{
-            int sec = std::stoi(commands[2]);
-            if(db.expire(commands[1], sec))
-                return "+OK\r\n";
-            else
-                return "-ERR Key not found\r\n";
-        }catch(std::exception&){
-            return "-ERR Invalid expiration time\r\n";
-        }
+        if (commands.size() < 2)
+            return "-ERR DEL requires key\r\n";
+        if (db.exists(commands[1]))
+            return ":1\r\n";
+        return ":0\r\n";
     }
     else if (cmd == "RENAME")
     {
