@@ -1,4 +1,4 @@
-// My-Redis desktop dashboard — Dear ImGui + GLFW + OpenGL3. Talks RESP over TCP directly
+// Redis-Clone desktop dashboard — Dear ImGui + GLFW + OpenGL3. Talks RESP over TCP directly
 // to your server (no bridge needed). Network I/O runs on a worker thread so the UI never blocks.
 //
 // Usage: redis_dashboard [host] [port]     (or env REDIS_HOST / REDIS_PORT; optional DASH_FONT=/path/font.ttf)
@@ -16,6 +16,7 @@ typedef int sock_t;
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "bench.h"
 
 #include <algorithm>
 #include <atomic>
@@ -487,6 +488,7 @@ static void worker()
                 lastSave = std::string("last SAVE ") + b;
             }
         }
+        if (bench::runner().isRunning()) continue;
         Overview o = fetchOverview();
         Inspect d;
         if (!key.empty() && o.online)
@@ -571,6 +573,8 @@ static bool dangerBtn(const char *l, ImVec2 sz = ImVec2(0, 0))
     ImGui::PopStyleColor(3);
     return r;
 }
+
+#include "bench_panel.h"
 
 struct Modal
 {
@@ -679,28 +683,6 @@ static void runConsole(const std::string &line)
     scrollLog = true;
 }
 
-static bool wantFullscreenToggle = false;
-
-static void toggleFullscreen(GLFWwindow *win)
-{
-    static int wx = 100, wy = 100, ww = 1600, wh = 1000;
-    if (glfwGetWindowMonitor(win))
-    {
-        glfwSetWindowMonitor(win, nullptr, wx, wy, ww, wh, GLFW_DONT_CARE);
-        fprintf(stderr, "leaving fullscreen\n");
-    }
-    else
-    {
-        glfwGetWindowPos(win, &wx, &wy);
-        glfwGetWindowSize(win, &ww, &wh);
-        GLFWmonitor *m = glfwGetPrimaryMonitor();
-        const GLFWvidmode *vm = m ? glfwGetVideoMode(m) : nullptr;
-        if (!m || !vm) { fprintf(stderr, "no monitor/videomode\n"); return; }
-        glfwSetWindowMonitor(win, m, 0, 0, vm->width, vm->height, vm->refreshRate);
-        fprintf(stderr, "entering fullscreen %dx%d@%d\n", vm->width, vm->height, vm->refreshRate);
-    }
-}
-
 static void drawUI(ImGuiIO &io)
 {
     Overview o;
@@ -717,11 +699,11 @@ static void drawUI(ImGuiIO &io)
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(io.DisplaySize);
-    ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
     // ---- header ----
     ImGui::SetWindowFontScale(1.6f);
-    ImGui::TextUnformatted("My Redis");
+    ImGui::TextUnformatted("Redis Clone");
     ImGui::SetWindowFontScale(1.f);
     ImGui::SameLine(0, 18);
     ImVec2 p = ImGui::GetCursorScreenPos();
@@ -735,10 +717,9 @@ static void drawUI(ImGuiIO &io)
         ImGui::TextColored(hex(C_DANGER), "Unreachable");
     ImGui::SameLine(0, 18);
     ImGui::TextDisabled("%s:%s  RESP over TCP", REDIS_HOST.c_str(), REDIS_PORT.c_str());
-    float bw = 96, right = ImGui::GetWindowWidth() - ImGui::GetStyle().WindowPadding.x;
+        float bw = 96, right = ImGui::GetWindowWidth() - ImGui::GetStyle().WindowPadding.x;
     ImGui::SameLine(right - bw * 4 - ImGui::GetStyle().ItemSpacing.x * 3);
-    if (ImGui::Button("FULL", ImVec2(bw, 0)))
-        wantFullscreenToggle = true;
+    if (ImGui::Button("BENCH", ImVec2(bw, 0))) showBench = !showBench;
     ImGui::SameLine();
     if (ImGui::Button("LOAD", ImVec2(bw, 0)))
         ask("LOAD", "Replace the in-memory data with redisDB.rdb?", false, "", [](const std::string &)
@@ -753,7 +734,7 @@ static void drawUI(ImGuiIO &io)
     if (!o.online)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, hex(C_DANGER));
-        ImGui::TextWrapped("Cannot reach the My Redis at %s:%s (%s). Start the server; this view retries every 3 s.", REDIS_HOST.c_str(), REDIS_PORT.c_str(), o.error.c_str());
+        ImGui::TextWrapped("Cannot reach the Redis clone at %s:%s (%s). Start the server; this view retries every 3 s.", REDIS_HOST.c_str(), REDIS_PORT.c_str(), o.error.c_str());
         ImGui::PopStyleColor();
     }
 
@@ -1020,6 +1001,7 @@ static void drawUI(ImGuiIO &io)
 
     drawModal();
     ImGui::End();
+    drawBenchWindow();
 }
 
 int main(int argc, char **argv)
@@ -1042,8 +1024,9 @@ int main(int argc, char **argv)
     const char *glsl = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
-    GLFWwindow *win = glfwCreateWindow(1600, 1000, "My Redis Dashboard", nullptr, nullptr);
+    glfwWindowHint(GLFW_ALPHA_BITS, 0);
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
+    GLFWwindow *win = glfwCreateWindow(1600, 1000, "Redis Clone Dashboard", nullptr, nullptr);
     if (!win)
     {
         fprintf(stderr, "cannot create window\n");
@@ -1075,30 +1058,17 @@ int main(int argc, char **argv)
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
-        if (wantFullscreenToggle) { toggleFullscreen(win); wantFullscreenToggle = false; }
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         drawUI(io);
-        bool overItem = ImGui::IsAnyItemHovered() || ImGui::IsAnyItemActive();
-        if (ImGui::IsMouseDoubleClicked(0) && !overItem)
-        {
-            fprintf(stderr, "double-click -> toggle fullscreen\n");
-            wantFullscreenToggle = true;
-        }
-        if (ImGui::IsKeyPressed(ImGuiKey_F11, false))
-        {
-            fprintf(stderr, "F11 -> toggle fullscreen\n");
-            wantFullscreenToggle = true;
-        }
-        if (ImGui::IsKeyPressed(ImGuiKey_Escape, false) && glfwGetWindowMonitor(win))
-            wantFullscreenToggle = true;
         ImGui::Render();
         int w, h;
         glfwGetFramebufferSize(win, &w, &h);
         glViewport(0, 0, w, h);
         glClearColor(0.055f, 0.075f, 0.067f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(win);
     }
